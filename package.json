@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "description": "command-line http download client, accelerated with fast-download",
   "main": "index.js",
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/zenflow/node-fast-download-cli"
+  },
   "keywords": [
     "fast",
     "speedy",
