@@ -1,10 +1,26 @@
 #!/usr/bin/env node
 var fs = require('fs');
+var http = require('http');
 var path = require('path');
 var url = require('url');
 var program = require('commander');
 var fastDownload = require('fast-download');
 var display = require('./display');
+
+var die = function(error){
+	console.error(error);
+	process.exit();
+};
+var formatBytes = function(bytes, precision){
+    var units = ['bytes', 'kb', 'mb', 'gb', 'tb'];
+	var unit_i = 0;
+	var number = bytes;
+    while(number>=1024){
+        unit_i++;
+        number = number / 1024;
+    }
+    return number.toFixed(precision || 0) + " " + units[unit_i];
+}
 
 program
 	.version('0.1.0')
@@ -18,34 +34,22 @@ program
 	.option('-t, --timeout <n>', 'request timeout in milliseconds (default: 5000)', parseInt, 5000)
 	.parse(process.argv);
 program.url = program.args[0];
+if (!program.url){
+	die('give me a url')
+}
 program.filename = program.filename || decodeURIComponent(path.basename(url.parse(program.url).pathname));
 program.directory = program.directory || process.cwd();
 var destination = path.join(program.directory, program.filename);
+http.globalAgent.maxSockets = program.connections;
 
-var handleError = function(error){
-	console.log(error);
-	process.exit();
-};
-
-var formatBytes = function(bytes, precision){
-    var units = ['bytes', 'kb', 'mb', 'gb', 'tb'];
-	var unit_i = 0;
-	var number = bytes;
-    while(number>=1024){
-        unit_i++;
-        number = number / 1024;
-    }
-    return number.toFixed(precision || 0) + " " + units[unit_i];
-}
-
-var initDownload = function(start_position){
+var doDownload = function(start_position){
 	var download = fastDownload(program.url, {
 		start: start_position,
 		connections: program.connections,
 		chunkSize: program.chunkSize,
 		timeout: program.timeout
 	});
-	download.on('error', handleError);
+	download.on('error', die);
 	var updateDisplay = function(){
 		var progress = download.progress();
 		if (!progress.total){return;}
@@ -77,24 +81,24 @@ var initDownload = function(start_position){
 	download.on('end', function(){
 		updateDisplay();
 		clearInterval(progress_interval);
-		console.log('done!');
-		process.exit();
+		die('done!');
 	});
 };
 
 var beginDownload = function(){
-	initDownload(0);
+	doDownload(0);
 };
 var resumeDownload = function(){
 	fs.stat(destination, function(err, stat){
 		if (err){
-			handleError(err);
+			die(err);
 		}
-		initDownload(stat.size);
+		doDownload(stat.size);
 	});
 };
-
-if (program.overwrite){
+if (program.overwrite && program.resume){
+	handleError("can't overwrite and resume together, duh");
+} else if (program.overwrite){
 	beginDownload();
 } else if (program.resume){
 	resumeDownload();
