@@ -1,6 +1,6 @@
 {
   "name": "fast-download-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "command-line http download client, accelerated with fast-download",
   "main": "index.js",
   "repository": {
@@ -22,7 +22,7 @@
     "cli"
   ],
   "dependencies": {
-    "fast-download": "~0.1.0",
+    "fast-download": "~0.2.0",
     "charm": "~0.1.2",
     "commander": "~1.2.0"
   },
